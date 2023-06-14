@@ -209,3 +209,239 @@ let test2 =
       bloodType = "B";
     }
   = "Tom's blood type is B."
+
+(* Chapter09 リスト *)
+(* a::listのようにすることで、[a,...list]というリストが作成できる *)
+(* [a;b]でも普通にかける *)
+let listPerson =
+  [
+    {
+      name = "James";
+      height = 1.72;
+      weight = 80.;
+      birthDay = "1230";
+      bloodType = "A";
+    };
+    {
+      name = "Tom";
+      height = 1.72;
+      weight = 80.;
+      birthDay = "1230";
+      bloodType = "B";
+    };
+  ]
+
+(* リストに対してもパターンマッチできる *)
+(* 注意：リストの場合は、match リスト with パターン -> 式　のパターン -> 式を複数個用意できる *)
+(* 全パターンを網羅するようにマッチしないと実行前エラーとなる *)
+let getFirstOfList lst = match lst with [] -> 0 | first :: rest -> first
+let test1 = getFirstOfList [ 1; 2; 3 ] = 1
+let test1 = getFirstOfList [ 20; 12; 13 ] = 20
+let test1 = getFirstOfList [] = 0
+
+(* 可変長であるリストをうまく扱うためには、再起的に取り扱うことが有効 *)
+
+(* 目的：受け取ったリスト lst に 0 が含まれているかを調べる *)
+(* containZero: int list -> bool *)
+let rec containZero lst =
+  (* letでなくlet recとして定義することで、再起的に使うことを明示 *)
+  match lst with
+  | [] -> false (* 停止性の条件として、空リストに対する結果を定義 *)
+  | first :: rest ->
+      if first = 0 then true
+      else containZero rest (* 要素の一つ目が0のときtrue, そうでない時は残りの要素に対して再起的に実行 *)
+
+let test1 = containZero [] = false
+let test1 = containZero [ 1; 2; 0 ] = true
+let test1 = containZero [ 1; 2; 3 ] = false
+
+(* 目的：整数の入ったリストを受け取り、全ての要素の和を求める *)
+(* sum: int list -> int *)
+let rec sum lst = match lst with [] -> 0 | first :: rest -> first + sum rest
+let test = sum [] = 0
+let test = sum [ 0 ] = 0
+let test = sum [ 10 ] = 10
+let test = sum [ 10; 20 ] = 30
+let test = sum [ 1; 2; 3; 4; 5 ] = 15
+
+(* 目的：整数のリストを受け取り、リストの長さを求める *)
+(* length: int list -> int *)
+let rec length lst = match lst with [] -> 0 | first :: rest -> 1 + length rest
+let test = length [] = 0
+let test = length [ 1 ] = 1
+let test = length [ 10 ] = 1
+let test = length [ 10; 20 ] = 2
+let test = length [ 1; 2; 3; 4; 5 ] = 5
+
+(* 目的：整数のリストを受け取り、偶数の要素のみを含むリストを返す *)
+(* int list -> int list *)
+let rec even lst =
+  match lst with
+  | [] -> []
+  | first :: rest -> if first mod 2 = 0 then first :: even rest else even rest
+
+let test = even [] = []
+let test = even [ 1 ] = []
+let test = even [ 4 ] = [ 4 ]
+let test = even [ 2; 5; 6; 8; 11; 12 ] = [ 2; 6; 8; 12 ]
+
+(* 目的：文字列のリストを受け取り、要素を前から順に結合した文字列を返す *)
+(* string list -> string *)
+let rec concat lst =
+  match lst with [] -> "" | first :: rest -> first ^ concat rest
+
+let test = concat [] = ""
+let test = concat [ "1" ] = "1"
+let test = concat [ "春"; "なつ"; "winter" ] = "春なつwinter"
+let test = concat [ "春"; ""; "winter" ] = "春winter"
+
+(* 学生のリスト lst のうち、特定の成績の生徒の数を返す *)
+(* gakuseiType list -> int *)
+type gakuseiType = { name : string; score : int; rank : string }
+
+let rec countByRank lst rank =
+  match lst with
+  | [] -> 0
+  | { name = n; score = s; rank = r } :: rest ->
+      if r = rank then 1 + countByRank rest rank else countByRank rest rank
+
+let lst1 = []
+let lst2 = [ { name = "john"; score = 85; rank = "B" } ]
+let lst3 = [ { name = "john"; score = 95; rank = "A" } ]
+
+let lst4 =
+  [
+    { name = "john"; score = 85; rank = "B" };
+    { name = "john"; score = 95; rank = "A" };
+  ]
+
+let lst5 =
+  [
+    { name = "john"; score = 85; rank = "B" };
+    { name = "john"; score = 95; rank = "A" };
+    { name = "john"; score = 92; rank = "A" };
+  ]
+
+let test = countByRank lst1 "A" = 0
+let test = countByRank lst2 "A" = 0
+let test = countByRank lst3 "A" = 1
+let test = countByRank lst4 "A" = 1
+let test = countByRank lst5 "A" = 2
+let test = countByRank lst5 "B" = 1
+
+(* 目的：personType型のリストを受け取り、血液型がAの人の数を返す *)
+(* personType list -> int *)
+let rec countBloodTypeIsA lst =
+  match lst with
+  | [] -> 0
+  | { name; height; weight; birthDay; bloodType } :: rest ->
+      if bloodType = "A" then 1 + countBloodTypeIsA rest
+      else countBloodTypeIsA rest
+
+let lst1 = []
+
+let lst2 =
+  [
+    {
+      name = "james";
+      height = 1.7;
+      weight = 56.;
+      birthDay = "1231";
+      bloodType = "A";
+    };
+  ]
+
+let lst3 =
+  [
+    {
+      name = "john";
+      height = 1.2;
+      weight = 56.;
+      birthDay = "1231";
+      bloodType = "B";
+    };
+  ]
+
+let lst4 =
+  [
+    {
+      name = "bob";
+      height = 1.6;
+      weight = 56.;
+      birthDay = "1231";
+      bloodType = "A";
+    };
+    {
+      name = "john";
+      height = 1.2;
+      weight = 56.;
+      birthDay = "1231";
+      bloodType = "B";
+    };
+  ]
+
+let lst5 =
+  [
+    {
+      name = "big";
+      height = 1.7;
+      weight = 56.;
+      birthDay = "1231";
+      bloodType = "A";
+    };
+    {
+      name = "big";
+      height = 1.8;
+      weight = 56.;
+      birthDay = "1231";
+      bloodType = "AB";
+    };
+  ]
+
+let lst6 =
+  [
+    {
+      name = "big";
+      height = 1.7;
+      weight = 56.;
+      birthDay = "1231";
+      bloodType = "A";
+    };
+    {
+      name = "small";
+      height = 1.3;
+      weight = 56.;
+      birthDay = "1231";
+      bloodType = "A";
+    };
+    {
+      name = "big";
+      height = 1.8;
+      weight = 56.;
+      birthDay = "1231";
+      bloodType = "AB";
+    };
+  ]
+
+let test = countBloodTypeIsA lst1 = 0
+let test = countBloodTypeIsA lst2 = 1
+let test = countBloodTypeIsA lst3 = 0
+let test = countBloodTypeIsA lst4 = 1
+let test = countBloodTypeIsA lst5 = 1
+let test = countBloodTypeIsA lst6 = 2
+
+(* 目的：personType型のリストを受け取り、身長が1.6m以上の人の名前を格納したリストを返す *)
+(* personType list -> string list *)
+let rec nameOfHeightIsOber1p6 lst =
+  match lst with
+  | [] -> []
+  | { name; height; weight; birthDay; bloodType } :: rest ->
+      if height < 1.6 then nameOfHeightIsOber1p6 rest
+      else name :: nameOfHeightIsOber1p6 rest
+
+let test = nameOfHeightIsOber1p6 lst1
+let test = nameOfHeightIsOber1p6 lst2
+let test = nameOfHeightIsOber1p6 lst3
+let test = nameOfHeightIsOber1p6 lst4
+let test = nameOfHeightIsOber1p6 lst5
+let test = nameOfHeightIsOber1p6 lst6
