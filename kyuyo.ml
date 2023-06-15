@@ -445,3 +445,366 @@ let test = nameOfHeightIsOber1p6 lst3
 let test = nameOfHeightIsOber1p6 lst4
 let test = nameOfHeightIsOber1p6 lst5
 let test = nameOfHeightIsOber1p6 lst6
+
+(* Chapter10 再帰関数を使ったプログラミング *)
+(* 目的：整数と整数リストのリストを受け取り、全ての整数リストの先頭に整数を付け加えたリストを返す *)
+(* int -> int list list -> int list list *)
+let rec add_to_each num lst =
+  match lst with
+  | [] -> []
+  | first :: rest -> (num :: first) :: add_to_each num rest
+
+let test = add_to_each 1 [] = []
+let test = add_to_each 1 [ [ 2 ] ] = [ [ 1; 2 ] ]
+let test = add_to_each 1 [ [ 2 ]; [ 2; 3 ] ] = [ [ 1; 2 ]; [ 1; 2; 3 ] ]
+
+let test =
+  add_to_each 1 [ [ 2 ]; [ 2; 3 ]; [ 2; 3; 4 ] ]
+  = [ [ 1; 2 ]; [ 1; 2; 3 ]; [ 1; 2; 3; 4 ] ]
+
+(* 目的：整数のリストを受け取り、その接頭語のリストをかえす *)
+(* int list -> int list list *)
+let rec prefix lst =
+  match lst with
+  | [] -> []
+  | first :: rest -> [ first ] :: add_to_each first (prefix rest)
+
+let test = prefix [] = []
+let test = prefix [ 1 ] = [ [ 1 ] ]
+let test = prefix [ 1; 2 ] = [ [ 1 ]; [ 1; 2 ] ]
+let test = prefix [ 1; 2; 3 ] = [ [ 1 ]; [ 1; 2 ]; [ 1; 2; 3 ] ]
+
+(* 目的：昇順に並んだ整数のリストlstと整数numを受け取り、昇順となるようにnumをlstに挿入する *)
+(* int list -> int -> int list *)
+let rec insert lst num =
+  match lst with
+  | [] -> [ num ]
+  | first :: rest ->
+      if num < first then num :: first :: rest else first :: insert rest num
+
+let test = insert [] 1 = [ 1 ]
+let test = insert [ 1 ] 10 = [ 1; 10 ]
+let test = insert [ 1; 3; 4; 5; 10 ] 8 = [ 1; 3; 4; 5; 8; 10 ]
+let test = insert [ 1; 3; 4; 5; 10 ] 5 = [ 1; 3; 4; 5; 5; 10 ]
+
+(* 目的：整数のリストを受け取り、昇順にソートしたリストを返す *)
+(* int list -> int list *)
+let rec ins_sort lst =
+  match lst with [] -> [] | first :: rest -> insert (ins_sort rest) first
+
+let test = ins_sort [] = []
+let test = ins_sort [ 6 ] = [ 6 ]
+let test = ins_sort [ 1; 2; 10 ] = [ 1; 2; 10 ]
+let test = ins_sort [ 2; 10; 1 ] = [ 1; 2; 10 ]
+let test = ins_sort [ 7; 10; 2; 9 ] = [ 2; 7; 9; 10 ]
+let test = ins_sort [ 2; 10; 7; 7 ] = [ 2; 7; 7; 10 ]
+
+(* 目的：score順にsortされたgakuseiTypeのリスト lst と、同じ型の値gakuseiを受け取り、昇順を維持して挿入したリストを返す *)
+(* gakuseiType list -> gakuseiType -> gakuseiType list *)
+let rec gakusei_ins lst gakusei =
+  match lst with
+  | [] -> [ gakusei ]
+  | ({ name = name_f; score = score_f; rank = rank_f } as first) :: rest -> (
+      match gakusei with
+      | { name = name_g; score = score_g; rank = rank_g } ->
+          if score_g < score_f then gakusei :: first :: rest
+          else first :: gakusei_ins rest gakusei)
+
+(* 目的：gakuseiTypeのリストを受け取り、scoreフィールドの値で昇順にソートしたリストを返す *)
+(* gakuseiType list -> gakuseiType list *)
+let rec gakusei_sort lst =
+  match lst with
+  | [] -> []
+  | first :: rest -> gakusei_ins (gakusei_sort rest) first
+
+let test = gakusei_sort [] = []
+let test = gakusei_sort [ { name = "john"; score = 95; rank = "A" } ]
+
+let test =
+  gakusei_sort
+    [
+      { name = "john"; score = 85; rank = "B" };
+      { name = "james"; score = 95; rank = "A" };
+      { name = "bob"; score = 92; rank = "A" };
+    ]
+
+(* 目的：与えられた整数のリストの中から最小値を取り出す *)
+(* int list -> int *)
+(* 空の場合はmax_intという特殊な値を入れる。これはint型の最大値 *)
+let rec minimum lst =
+  match lst with
+  | [] -> max_int
+  | first :: rest -> if first < minimum rest then first else minimum rest
+
+let test = minimum [ 1; 10; 5 ] = 1
+let test = minimum [ 1; 10; -5 ] = -5
+let test = minimum [ 999 ] = 999
+
+(* 目的：学生のリストの中から最高得点の学生のレコードを返す *)
+(* gakuseiType list -> gakuseiType list *)
+let rec getGakuseiOfMaxScore lst =
+  match lst with
+  | [] -> { name = "foo"; score = min_int; rank = "Z" }
+  | ({ name; score; rank } as first) :: rest -> (
+      match getGakuseiOfMaxScore rest with
+      | { name = name_r; score = score_r; rank = rank_r } as r ->
+          if score > score_r then first else r)
+
+let gakusei1 = { name = "nakamura"; score = 90; rank = "A" }
+let gakusei2 = { name = "miyahara"; score = 80; rank = "A" }
+let gakusei3 = { name = "sato"; score = 75; rank = "B" }
+let gakusei4 = { name = "idehara"; score = 70; rank = "B" }
+let gakusei5 = { name = "tsubata"; score = 65; rank = "C" }
+let gakusei6 = { name = "asai"; score = 60; rank = "C" }
+
+(* テスト *)
+let lst1 = [ gakusei2 ]
+let lst2 = [ gakusei3; gakusei4 ]
+let lst3 = [ gakusei4; gakusei3 ]
+let lst4 = [ gakusei4; gakusei1; gakusei6; gakusei5; gakusei2; gakusei3 ]
+let test1 = getGakuseiOfMaxScore lst1 = gakusei2
+let test2 = getGakuseiOfMaxScore lst2 = gakusei3
+let test3 = getGakuseiOfMaxScore lst3 = gakusei3
+let test4 = getGakuseiOfMaxScore lst4 = gakusei1
+
+(* 局所変数定義 *)
+(* let 変数 = 式1 in 式2　の形で、変数を式２の中だけで局所的に利用可能 *)
+
+(* 先ほどのminimumを書き換える。(もともとminimum restを２回計算していたところを、一度だけにする) *)
+let rec minimum lst =
+  match lst with
+  | [] -> max_int
+  | first :: rest ->
+      let min_rest = minimum rest in
+      if first < min_rest then first else min_rest
+
+let rec getGakuseiOfMaxScore lst =
+  match lst with
+  | [] -> { name = "foo"; score = min_int; rank = "Z" }
+  | ({ name; score; rank } as first) :: rest -> (
+      let max_rest = getGakuseiOfMaxScore rest in
+      match max_rest with
+      | { name = name_r; score = score_r; rank = rank_r } ->
+          if score > score_r then first else max_rest)
+
+let test1 = getGakuseiOfMaxScore lst1 = gakusei2
+let test2 = getGakuseiOfMaxScore lst2 = gakusei3
+let test3 = getGakuseiOfMaxScore lst3 = gakusei3
+let test4 = getGakuseiOfMaxScore lst4 = gakusei1
+
+(* gakuseiTypeのリストを受け取り、rankごとの人数をタプルとして返す *)
+(* gakuseiType list -> int*int*int*int *)
+let rec summarizeRank lst =
+  match lst with
+  | [] -> (0, 0, 0, 0)
+  | { name; score; rank } :: rest -> (
+      let sum_rest = summarizeRank rest in
+      match sum_rest with
+      | a, b, c, d ->
+          if rank = "A" then (a + 1, b, c, d)
+          else if rank = "B" then (a, b + 1, c, d)
+          else if rank = "C" then (a, b, c + 1, d)
+          else (a, b, c, d + 1))
+
+let test1 = summarizeRank [] = (0, 0, 0, 0)
+let test1 = summarizeRank lst1 = (1, 0, 0, 0)
+let test1 = summarizeRank lst2 = (0, 2, 0, 0)
+let test1 = summarizeRank lst3 = (0, 2, 0, 0)
+let test1 = summarizeRank lst4 = (2, 2, 2, 0)
+
+(* let 変数 = 式1 in 式2 の変数にはパターンもかける。その場合、パターンのmatch文は不要となる *)
+let rec summarizeRank lst =
+  match lst with
+  | [] -> (0, 0, 0, 0)
+  | { name; score; rank } :: rest ->
+      let a, b, c, d = summarizeRank rest in
+      if rank = "A" then (a + 1, b, c, d)
+      else if rank = "B" then (a, b + 1, c, d)
+      else if rank = "C" then (a, b, c + 1, d)
+      else (a, b, c, d + 1)
+
+(* personTypeのリストを受け取り、各血液型の人数をタプルにして返す *)
+let rec sumBloodType lst =
+  match lst with
+  | [] -> (0, 0, 0, 0)
+  | { name; height; weight; birthDay; bloodType } :: rest ->
+      let a, b, ab, o = sumBloodType rest in
+      if bloodType = "A" then (a + 1, b, ab, o)
+      else if bloodType = "B" then (a, b + 1, ab, o)
+      else if bloodType = "AB" then (a, b, ab + 1, o)
+      else (a, b, ab, o + 1)
+
+let lst1 = []
+
+let lst2 =
+  [
+    {
+      name = "james";
+      height = 1.7;
+      weight = 56.;
+      birthDay = "1231";
+      bloodType = "A";
+    };
+  ]
+
+let lst3 =
+  [
+    {
+      name = "john";
+      height = 1.2;
+      weight = 56.;
+      birthDay = "1231";
+      bloodType = "B";
+    };
+  ]
+
+let lst4 =
+  [
+    {
+      name = "bob";
+      height = 1.6;
+      weight = 56.;
+      birthDay = "1231";
+      bloodType = "A";
+    };
+    {
+      name = "john";
+      height = 1.2;
+      weight = 56.;
+      birthDay = "1231";
+      bloodType = "B";
+    };
+  ]
+
+let lst5 =
+  [
+    {
+      name = "big";
+      height = 1.7;
+      weight = 56.;
+      birthDay = "1231";
+      bloodType = "B";
+    };
+    {
+      name = "big";
+      height = 1.8;
+      weight = 56.;
+      birthDay = "1231";
+      bloodType = "O";
+    };
+  ]
+
+let lst6 =
+  [
+    {
+      name = "big";
+      height = 1.7;
+      weight = 56.;
+      birthDay = "1231";
+      bloodType = "A";
+    };
+    {
+      name = "small";
+      height = 1.3;
+      weight = 56.;
+      birthDay = "1231";
+      bloodType = "A";
+    };
+    {
+      name = "big";
+      height = 1.8;
+      weight = 56.;
+      birthDay = "1231";
+      bloodType = "AB";
+    };
+  ]
+
+let test = sumBloodType lst1 = (0, 0, 0, 0)
+let test = sumBloodType lst2 = (1, 0, 0, 0)
+let test = sumBloodType lst3 = (0, 1, 0, 0)
+let test = sumBloodType lst4 = (1, 1, 0, 0)
+let test = sumBloodType lst5 = (0, 1, 0, 1)
+let test = sumBloodType lst6 = (2, 0, 1, 0)
+
+(* 整数のリストを受け取り、最大値を返す *)
+let rec maximum lst =
+  match lst with
+  | [] -> min_int
+  | first :: rest ->
+      let max_rest = maximum rest in
+      if first > max_rest then first else max_rest
+
+(* 目的：personTypeのリストを受け取り、最も多い血液型を返す *)
+let mostBloodType lst =
+  let a, b, ab, o = sumBloodType lst in
+  let max_blood = maximum [ a; b; ab; o ] in
+  if max_blood = 0 then "No person in the list"
+  else if max_blood = a then "A"
+  else if max_blood = b then "B"
+  else if max_blood = ab then "AB"
+  else "O"
+
+let test = mostBloodType lst1 = "No person in the list"
+let test = mostBloodType lst2 = "A"
+let test = mostBloodType lst3 = "B"
+let test = mostBloodType lst4 = "A"
+let test = mostBloodType lst5 = "B"
+let test = mostBloodType lst6 = "A"
+
+(* 目的：同じ型のリスト二つを受け取り、結合したリストを返す *)
+(* 'a list -> 'a list -> 'a list *)
+let rec append lst1 lst2 =
+  match lst1 with [] -> lst2 | first :: rest -> first :: append rest lst2
+
+let test = append [] [] = []
+let test = append [] [ 1; 2 ] = [ 1; 2 ]
+let test = append [ 1; 3 ] [] = [ 1; 3 ]
+let test = append [ 1; 3 ] [ 2; 3 ] = [ 1; 3; 2; 3 ]
+let test = append [ "a"; "b" ] [ "g"; "l" ] = [ "a"; "b"; "g"; "l" ]
+
+(* 同じことはList.append lst1でもできるし、lst1 @ lst2でもOK *)
+let app = List.append [ 1; 2 ] [ 5; 6 ] = [ 1; 2; 5; 6 ]
+let app = [ "a"; "b" ] @ [ "c"; "f"; "g" ] = [ "a"; "b"; "c"; "f"; "g" ]
+
+(* 昇順に並んだ二つのリスト lst1 lst2 を受け取り、結合して昇順に並んだリストを返す *)
+let rec merge lst1 lst2 =
+  match lst1 with
+  | [] -> lst2
+  | first1 :: rest1 -> (
+      match lst2 with
+      | [] -> lst1
+      | first2 :: rest2 ->
+          if first1 < first2 then first1 :: merge rest1 lst2
+          else first2 :: merge rest2 lst1)
+
+let test = merge [] [] = []
+let test = merge [] [ 1; 2 ] = [ 1; 2 ]
+let test = merge [ 1; 3 ] [] = [ 1; 3 ]
+let test = merge [ 1; 3 ] [ 2; 3 ] = [ 1; 2; 3; 3 ]
+let test = merge [ 1; 5 ] [ 2; 3 ] = [ 1; 2; 3; 5 ]
+let test = merge [ 2; 5 ] [ 1; 3 ] = [ 1; 2; 3; 5 ]
+
+(* ２回matchさせなくても、二つのリストを組としてパターンマッチすることもできる *)
+let rec merge lst1 lst2 =
+  match (lst1, lst2) with
+  | [], [] -> []
+  | [], first2 :: rest2 -> lst2
+  | first1 :: rest1, [] -> lst1
+  | first1 :: rest1, first2 :: rest2 ->
+      if first1 < first2 then first1 :: merge rest1 lst2
+      else first2 :: merge rest2 lst1
+
+let test = merge [] [] = []
+let test = merge [] [ 1; 2 ] = [ 1; 2 ]
+let test = merge [ 1; 3 ] [] = [ 1; 3 ]
+let test = merge [ 1; 3 ] [ 2; 3 ] = [ 1; 2; 3; 3 ]
+let test = merge [ 1; 5 ] [ 2; 3 ] = [ 1; 2; 3; 5 ]
+let test = merge [ 2; 5 ] [ 1; 3 ] = [ 1; 2; 3; 5 ]
+
+(* 目的：二つのリストを受け取り、それらの長さが同じかどうかを判定する *)
+let rec lengthIsEqual lst1 lst2 =
+  match (lst1, lst2) with
+  | [], [] -> true
+  | [], first :: rest -> false
+  | first :: rest, [] -> false
+  | first1 :: rest1, first2 :: rest2 -> lengthIsEqual rest1 rest2
