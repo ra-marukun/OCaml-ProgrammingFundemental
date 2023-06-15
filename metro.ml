@@ -683,3 +683,51 @@ let global_ekikan_list =
     { kiten = "営団赤塚"; shuten = "営団成増"; keiyu = "有楽町線"; kyori = 1.5; jikan = 2 };
     { kiten = "営団成増"; shuten = "和光市"; keiyu = "有楽町線"; kyori = 2.1; jikan = 3 };
   ]
+
+(* ローマ字の駅名を表す文字列 ekimei と駅名リスト ekimei_list を受け取り、駅の漢字表記を返す *)
+let rec romaji_to_kanji ekimei ekimei_lst =
+  match ekimei_lst with
+  | [] -> ""
+  | { kanji; kana; romaji; shozoku } :: rest ->
+      if romaji = ekimei then kanji else romaji_to_kanji ekimei rest
+
+let test = romaji_to_kanji "myogadani" global_ekimei_list = "茗荷谷"
+let test = romaji_to_kanji "ikebukuro" global_ekimei_list = "池袋"
+let test = romaji_to_kanji "sapporo" global_ekimei_list = ""
+
+(* 漢字の駅名を二つ sta1 sta2 と、駅間の経路のリスト lst を受け取り、二駅間の距離を返す *)
+let rec get_ekikan_kyori sta1 sta2 lst =
+  match lst with
+  | [] -> infinity
+  | { kiten; shuten; keiyu; kyori; jikan } :: rest ->
+      if (kiten, shuten) = (sta1, sta2) || (kiten, shuten) = (sta2, sta1) then
+        kyori
+      else get_ekikan_kyori sta1 sta2 rest
+
+let test = get_ekikan_kyori "霞ヶ関" "国会議事堂前" global_ekikan_list = 0.7
+
+let test = get_ekikan_kyori "霞ヶ関" "茗荷谷" global_ekikan_list = infinity
+let test = get_ekikan_kyori "茗荷谷" "新大塚" global_ekikan_list = 1.2
+
+(* ローマ字の駅名二つ roman1 roman2 を受け取り、距離を調べ、直接つながっている場合は距離を伝える文字列を返す  *)
+(* 二つの駅が直接つながっていない場合はつながっていないという意図の文字列を、入力されたローマ字の駅名が存在しない場合は駅が存在しない旨を伝える文字列を返す *)
+let kyori_wo_hyoji roman1 roman2 =
+  let kanji1 = romaji_to_kanji roman1 global_ekimei_list in
+  let kanji2 = romaji_to_kanji roman2 global_ekimei_list in
+  let noStationMsg = " という駅は存在しません" in
+  if kanji1 = "" then roman1 ^ noStationMsg
+  else if kanji2 = "" then roman2 ^ noStationMsg
+  else
+    let kyori = get_ekikan_kyori kanji1 kanji2 global_ekikan_list in
+    if kyori = infinity then kanji1 ^ "と" ^ kanji2 ^ "はつながっていません"
+    else kanji1 ^ "から" ^ kanji2 ^ "までは " ^ string_of_float kyori ^ " キロです"
+
+let test1 = kyori_wo_hyoji "myougadani" "shinotsuka" = "myougadani という駅は存在しません"
+
+let test1 = kyori_wo_hyoji "myogadani" "shinotsuka" = "茗荷谷から新大塚までは 1.2 キロです"
+
+let test1 = kyori_wo_hyoji "myogadani" "ikebukuro" = "茗荷谷と池袋はつながっていません"
+
+let test1 = kyori_wo_hyoji "tokyo" "ootemachi" = "ootemachi という駅は存在しません"
+
+let test1 = kyori_wo_hyoji "tokyo" "otemachi" = "東京から大手町までは 0.6 キロです"
