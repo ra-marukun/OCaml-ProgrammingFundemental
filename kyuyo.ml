@@ -808,3 +808,31 @@ let rec lengthIsEqual lst1 lst2 =
   | [], first :: rest -> false
   | first :: rest, [] -> false
   | first1 :: rest1, first2 :: rest2 -> lengthIsEqual rest1 rest2
+
+(* Chapter11 自然数と再帰 *)
+(* 自然数も再帰的に定義できるため、let recで取り扱う *)
+
+(* 階乗を求める関数 *)
+let rec fac n = if n = 0 then 1 else n * fac (n - 1)
+let test = fac 0 = 1
+let test = fac 1 = 1
+let test = fac 3 = 6
+let test = fac 10 = 3628800
+
+(* mとnを受け取り、mのn乗を求める *)
+let rec power m n = if n = 0 then 1 else m * power m (n - 1)
+let test = power 3 0 = 1
+let test = power 3 1 = 3
+let test = power 3 3 = 27
+
+(* ０から受け取った自然数までの自乗和を求める *)
+let rec sum_of_square n = if n = 0 then 0 else (n * n) + sum_of_square (n - 1)
+let test = sum_of_square 0 = 0
+let test = sum_of_square 1 = 1
+let test = sum_of_square 3 = 14
+
+(* A(0)=3 A(n) = 2*A(n-1) -1  *)
+let rec a n = if n = 0 then 3 else (2 * a (n - 1)) - 1
+let test = a 0 = 3
+let test = a 1 = 5
+let test = a 2 = 9
