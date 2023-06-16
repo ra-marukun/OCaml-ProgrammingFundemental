@@ -15,6 +15,13 @@ type pathType = {
   jikan : int;
 }
 
+(* ダイクストラ法のために、駅名とその駅までの最短距離、最短経路を保持するレコードのための型を作成 *)
+type ekiType = {
+  namae : string;
+  saitan_kyori : float;
+  temae_list : string list;
+}
+
 let showStation station =
   match station with
   | { kanji; kana; romaji; shozoku } ->
@@ -731,3 +738,114 @@ let test1 = kyori_wo_hyoji "myogadani" "ikebukuro" = "茗荷谷と池袋はつ�
 let test1 = kyori_wo_hyoji "tokyo" "ootemachi" = "ootemachi という駅は存在しません"
 
 let test1 = kyori_wo_hyoji "tokyo" "otemachi" = "東京から大手町までは 0.6 キロです"
+
+(* stationType listを受け取り、ekiType listに駅名をコピーして返す *)
+let rec make_eki_list lst =
+  match lst with
+  | [] -> []
+  | { kanji; kana; romaji; shozoku } :: rest ->
+      { namae = kanji; saitan_kyori = infinity; temae_list = [] }
+      :: make_eki_list rest
+
+(* ekiType listを初期化するための関数として、ekiType listと起点となる駅名の文字列を受け取り、同名の駅のみ最短距離を0に、temae_listを起点の駅名としたリストを返す *)
+let rec shokika lst eki =
+  match lst with
+  | [] -> []
+  | ({ namae; saitan_kyori; temae_list } as first) :: rest ->
+      let record =
+        if namae = eki then { namae; saitan_kyori = 0.; temae_list = [ namae ] }
+        else first
+      in
+      record :: shokika rest eki
+
+(* 駅リストの例 *)
+let eki_list =
+  [
+    { namae = "池袋"; saitan_kyori = infinity; temae_list = [] };
+    { namae = "新大塚"; saitan_kyori = infinity; temae_list = [] };
+    { namae = "茗荷谷"; saitan_kyori = infinity; temae_list = [] };
+    { namae = "後楽園"; saitan_kyori = infinity; temae_list = [] };
+    { namae = "本郷三丁目"; saitan_kyori = infinity; temae_list = [] };
+    { namae = "御茶ノ水"; saitan_kyori = infinity; temae_list = [] };
+  ]
+
+(* テスト *)
+let test1 = shokika [] "茗荷谷" = []
+
+let test2 =
+  shokika eki_list "茗荷谷"
+  = [
+      { namae = "池袋"; saitan_kyori = infinity; temae_list = [] };
+      { namae = "新大塚"; saitan_kyori = infinity; temae_list = [] };
+      { namae = "茗荷谷"; saitan_kyori = 0.; temae_list = [ "茗荷谷" ] };
+      { namae = "後楽園"; saitan_kyori = infinity; temae_list = [] };
+      { namae = "本郷三丁目"; saitan_kyori = infinity; temae_list = [] };
+      { namae = "御茶ノ水"; saitan_kyori = infinity; temae_list = [] };
+    ]
+
+(* stationTypeとkanaフィールドでソートされたstationType listを受け取り、ソートを保持したままリストに加える。ただし、kanaが重複したものはリストに加えない *)
+let rec kanaIns eki lst =
+  match eki with
+  | { kanji = kanji_e; kana = kana_l; romaji = romaji_l; shozoku = shozoku_l }
+    -> (
+      match lst with
+      | [] -> [ eki ]
+      | ({ kanji; kana; romaji; shozoku } as first) :: rest ->
+          if kana_l < kana then eki :: first :: rest
+          else if kana_l = kana then first :: rest
+          else first :: kanaIns eki rest)
+
+(* stationType listを受け取り、ひらがな順に整列したstationType listを返す。 *)
+let rec seiretsu lst =
+  match lst with [] -> [] | first :: rest -> kanaIns first (seiretsu rest)
+
+let ekimei_list =
+  [
+    { kanji = "池袋"; kana = "いけぶくろ"; romaji = "ikebukuro"; shozoku = "丸ノ内線" };
+    { kanji = "新大塚"; kana = "しんおおつか"; romaji = "shinotsuka"; shozoku = "丸ノ内線" };
+    { kanji = "茗荷谷"; kana = "みょうがだに"; romaji = "myogadani"; shozoku = "丸ノ内線" };
+    { kanji = "後楽園"; kana = "こうらくえん"; romaji = "korakuen"; shozoku = "丸ノ内線" };
+    { kanji = "池袋"; kana = "いけぶくろ"; romaji = "ikebukuro"; shozoku = "副都心線" };
+    {
+      kanji = "本郷三丁目";
+      kana = "ほんごうさんちょうめ";
+      romaji = "hongosanchome";
+      shozoku = "丸ノ内線";
+    };
+    { kanji = "御茶ノ水"; kana = "おちゃのみず"; romaji = "ochanomizu"; shozoku = "丸ノ内線" };
+    {
+      kanji = "本郷三丁目";
+      kana = "ほんごうさんちょうめ";
+      romaji = "hongosanchome";
+      shozoku = "大江戸線";
+    };
+  ]
+
+(* テスト *)
+let test3 = seiretsu [] = []
+
+let test4 =
+  seiretsu ekimei_list
+  = [
+      { kanji = "池袋"; kana = "いけぶくろ"; romaji = "ikebukuro"; shozoku = "副都心線" };
+      {
+        kanji = "御茶ノ水";
+        kana = "おちゃのみず";
+        romaji = "ochanomizu";
+        shozoku = "丸ノ内線";
+      };
+      { kanji = "後楽園"; kana = "こうらくえん"; romaji = "korakuen"; shozoku = "丸ノ内線" };
+      {
+        kanji = "新大塚";
+        kana = "しんおおつか";
+        romaji = "shinotsuka";
+        shozoku = "丸ノ内線";
+      };
+      {
+        kanji = "本郷三丁目";
+        kana = "ほんごうさんちょうめ";
+        romaji = "hongosanchome";
+        shozoku = "大江戸線";
+      };
+      { kanji = "茗荷谷"; kana = "みょうがだに"; romaji = "myogadani"; shozoku = "丸ノ内線" };
+    ]
