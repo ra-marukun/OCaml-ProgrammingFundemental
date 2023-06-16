@@ -836,3 +836,63 @@ let rec a n = if n = 0 then 3 else (2 * a (n - 1)) - 1
 let test = a 0 = 3
 let test = a 1 = 5
 let test = a 2 = 9
+
+(* Chapter13 一般化と高階関数 *)
+(* 似ている関数を複数個作成している場合は、抽象化することを考えよう *)
+
+(* 目的；実数のリストを受け取り、各要素の平方根のリストを返す *)
+let rec map_sqrt lst =
+  match lst with [] -> [] | first :: rest -> sqrt first :: map_sqrt rest
+
+let hyouka gakusei =
+  match gakusei with
+  | { name; score; rank } ->
+      let r =
+        if score >= 90 then "A"
+        else if score >= 80 then "B"
+        else if score >= 70 then "C"
+        else "D"
+      in
+      { name; score; rank = r }
+
+(* gakuseiType listを受け取り、scoreに応じたrankに修正する *)
+let rec map_hyouka lst =
+  match lst with [] -> [] | first :: rest -> hyouka first :: map_hyouka rest
+
+(* map_sqrtとmap_hyoukaは似ている。リストに対して適用している関数が違うだけ。 *)
+(* map funcとして一般化する *)
+let rec map func lst =
+  match lst with [] -> [] | first :: rest -> func first :: map func rest
+
+let test =
+  let a = [ 1.; 2.; 3. ] in
+  map_sqrt a = map sqrt a
+
+(* 同じ機能のList.mapが存在する *)
+
+(* personType listを受け取り、名前のリストを返す *)
+let getPersonName person = match person with { name; height } -> name
+let mapGetPersonName lst = List.map getPersonName lst
+
+(* 関数を引数にしたり、返り値にすることもできる *)
+(* 関数funcを受け取り、funcを２回適用する関数を返す *)
+let twice func =
+  let g x = func (func x) in
+  g
+
+let a_a_func a = a
+let a_b_a_func a b = a
+let a_b_b_func a b = b
+let a__a_b__b_func a f = f a
+let a_b__b_c__a_c_func f g a = g (f a)
+
+(* 関数を二つ受け取り、二つの関数を合成した関数を返す *)
+let compose f1 f2 =
+  let g x = f1 (f2 x) in
+  g
+
+(* テスト *)
+let add3 num = num + 3
+let times2 num = num * 2
+let test = compose times2 add3 4 = 14
+let tt = twice twice
