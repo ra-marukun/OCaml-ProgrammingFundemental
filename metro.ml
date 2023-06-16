@@ -887,6 +887,22 @@ let eki4 = { namae = "後楽園"; saitan_kyori = infinity; temae_list = [] }
 let lst = [ eki1; eki2; eki3; eki4 ]
 
 (* テスト *)
+
+let test1 = koushin1 eki3 eki1 = eki1
+let test2 = koushin1 eki3 eki2 = eki2
+let test3 = koushin1 eki3 eki3 = eki3
+
+let test4 =
+  koushin1 eki3 eki4
+  = { namae = "後楽園"; saitan_kyori = 1.8; temae_list = [ "後楽園"; "茗荷谷" ] }
+
+let test5 =
+  koushin1 eki2 eki1
+  = { namae = "池袋"; saitan_kyori = 3.0; temae_list = [ "池袋"; "新大塚"; "茗荷谷" ] }
+
+let test6 = koushin1 eki2 eki2 = eki2
+let test7 = koushin1 eki2 eki3 = eki3
+let test8 = koushin1 eki2 eki4 = eki4
 let test1 = koushin eki2 [] = []
 
 let test2 =
