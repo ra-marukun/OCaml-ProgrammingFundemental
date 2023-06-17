@@ -913,3 +913,84 @@ let test2 =
       eki3;
       eki4;
     ]
+
+let koushin p v =
+  let koushin1 p q =
+    match p with
+    | { namae = namae_p; saitan_kyori = kyori_p; temae_list = temae_p } -> (
+        match q with
+        | { namae = namae_q; saitan_kyori = kyori_q; temae_list = temae_q } ->
+            let kyori_p_q =
+              get_ekikan_kyori namae_p namae_q global_ekikan_list
+            in
+            if kyori_p_q = infinity then q
+            else
+              let new_kyori_q = kyori_p +. kyori_p_q in
+              if new_kyori_q < kyori_q then
+                {
+                  namae = namae_q;
+                  saitan_kyori = new_kyori_q;
+                  temae_list = namae_q :: temae_p;
+                }
+              else q)
+  in
+  let f q = koushin1 p q in
+  List.map f v
+
+let make_eki_list lst =
+  List.map
+    (fun eki ->
+      match eki with
+      | { kanji; kana; romaji; shozoku } ->
+          { namae = kanji; saitan_kyori = infinity; temae_list = [] })
+    lst
+
+let shokika lst eki =
+  List.map
+    (fun elem ->
+      match elem with
+      | { namae; saitan_kyori; temae_list } ->
+          if namae = eki then
+            { namae; saitan_kyori = 0.; temae_list = [ namae ] }
+          else elem)
+    lst
+
+(* make_eki_listとshokikaを合わせた関数 *)
+let make_initial_eki_list namae_lst eki =
+  List.map
+    (fun elem ->
+      match elem with
+      | { kanji; kana; romaji; shozoku } ->
+          if kanji = eki then
+            { namae = kanji; saitan_kyori = 0.; temae_list = [ eki ] }
+          else { namae = kanji; saitan_kyori = infinity; temae_list = [] })
+    namae_lst
+
+let ekimei_list =
+  [
+    { kanji = "池袋"; kana = "いけぶくろ"; romaji = "ikebukuro"; shozoku = "丸ノ内線" };
+    { kanji = "新大塚"; kana = "しんおおつか"; romaji = "shinotsuka"; shozoku = "丸ノ内線" };
+    { kanji = "茗荷谷"; kana = "みょうがだに"; romaji = "myogadani"; shozoku = "丸ノ内線" };
+    { kanji = "後楽園"; kana = "こうらくえん"; romaji = "korakuen"; shozoku = "丸ノ内線" };
+    {
+      kanji = "本郷三丁目";
+      kana = "ほんごうさんちょうめ";
+      romaji = "hongosanchome";
+      shozoku = "丸ノ内線";
+    };
+    { kanji = "御茶ノ水"; kana = "おちゃのみず"; romaji = "ochanomizu"; shozoku = "丸ノ内線" };
+  ]
+
+(* テスト *)
+let test1 = make_initial_eki_list [] "茗荷谷" = []
+
+let test2 =
+  make_initial_eki_list ekimei_list "茗荷谷"
+  = [
+      { namae = "池袋"; saitan_kyori = infinity; temae_list = [] };
+      { namae = "新大塚"; saitan_kyori = infinity; temae_list = [] };
+      { namae = "茗荷谷"; saitan_kyori = 0.; temae_list = [ "茗荷谷" ] };
+      { namae = "後楽園"; saitan_kyori = infinity; temae_list = [] };
+      { namae = "本郷三丁目"; saitan_kyori = infinity; temae_list = [] };
+      { namae = "御茶ノ水"; saitan_kyori = infinity; temae_list = [] };
+    ]

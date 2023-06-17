@@ -896,3 +896,149 @@ let add3 num = num + 3
 let times2 num = num * 2
 let test = compose times2 add3 4 = 14
 let tt = twice twice
+
+(* Chapter14 高階関数を使ったリスト処理 *)
+
+(* filter *)
+(* リストの中から条件を満たす要素を抽出 *)
+
+(* 目的：int listから正の要素だけを抽出 *)
+let rec filter_positive lst =
+  match lst with
+  | [] -> []
+  | first :: rest ->
+      if first > 0 then first :: filter_positive rest else filter_positive rest
+
+(* 目的：int listから3で割った余が1の要素を抽出 *)
+let rec filter_mod3_1 lst =
+  match lst with
+  | [] -> []
+  | first :: rest ->
+      if first mod 3 = 1 then first :: filter_mod3_1 rest
+      else filter_mod3_1 rest
+
+(* 上記はfilterを一般化できる *)
+(* 目的：lstから条件pを満たす要素を抽出 *)
+let rec filter p lst =
+  match lst with
+  | [] -> []
+  | first :: rest -> if p first then first :: filter p rest else filter p rest
+
+(* filterを使ってfilter_positiveを一般化 *)
+let isPositive num = num > 0
+let filter_positive lst = filter isPositive lst
+
+(* 組み込み関数 List.filterを使ってもかける *)
+let filter_positive lst = List.filter isPositive lst
+
+(* 目的；整数要素を受け取り、偶数を抽出する *)
+let isEven num = num mod 2 = 0
+let even lst = List.filter isEven lst
+let test = even [ 2; 3; 7; 8; 4 ] = [ 2; 8; 4 ]
+
+(* gakuseiType listを受け取り、成績がAの人をかぞえる *)
+let is_rankA gakusei = match gakusei with { name; score; rank } -> rank = "A"
+let countA lst = List.length (List.filter is_rankA lst)
+
+(* fold_right *)
+(* リストの各要素をまとめて値を返す *)
+
+(* int list を受け取り、和を返す *)
+let rec sum lst = match lst with [] -> 0 | first :: rest -> first + sum rest
+let test = sum [ 1; 4; 5 ] = 10
+
+(* 'a listを受け取り、長さを返す *)
+let rec length lst = match lst with [] -> 0 | first :: rest -> 1 + length rest
+let test = length [ 1; 4; 5 ] = 3
+
+(* 二つのlistを結合したlistを返す *)
+let rec append lst1 lst2 =
+  match lst1 with [] -> lst2 | first :: rest -> first :: append rest lst2
+
+let test = append [ 1; 2 ] [ 5; 6; 8 ] = [ 1; 2; 5; 6; 8 ]
+
+(* sumとlengthとappendは「空リストに対して値を一つ返す、そうでなければ再帰呼び出しを行い、その結果と先頭の要素を使って何らかの操作を行う」 *)
+(* 目的：initから始めてlstの要素を右から順にfuncに入力する *)
+(* funcを繰り返していくので、fold_right func lst initの型はfunc:'a ->'b ->'b lst:'a list init:'b *)
+let rec fold_right func lst init =
+  match lst with
+  | [] -> init
+  | first :: rest -> func first (fold_right func rest init)
+
+(* fold_rightを使って sum length appendを再定義 *)
+(* sum *)
+let add_int first rest_result = first + rest_result
+let sum lst = fold_right add_int lst 0
+let test = sum [ 1; 4; 5 ] = 10
+
+(* length *)
+let add1 first rest_result = 1 + rest_result
+let length lst = fold_right add1 lst 0
+let test = length [ 1; 4; 5 ] = 3
+
+(* append *)
+let appendFirst first rest_result = first :: rest_result
+let append lst1 lst2 = fold_right appendFirst lst1 lst2
+let test = append [ 1; 3 ] [ 2; 5; 6 ] = [ 1; 3; 2; 5; 6 ]
+
+(* string_count *)
+let str_count first rest_result = String.length first + rest_result
+let string_count lst = List.fold_right str_count lst 0
+let test = string_count [ "Baby"; "is"; "coming" ] = 12
+
+(* gakuseiType listを受け取り、全員の得点の合計を返す *)
+let addGakuseiScore first rest_result =
+  match first with { name; score; rank } -> score + rest_result
+
+let gakusei_sum lst = List.fold_right addGakuseiScore lst 0
+let test1 = gakusei_sum [] = 0
+let test1 = gakusei_sum [ { name = "ss"; score = 20; rank = "A" } ] = 20
+
+let test1 =
+  gakusei_sum
+    [
+      { name = "ss"; score = 20; rank = "A" };
+      { name = "ss"; score = 15; rank = "A" };
+      { name = "ss"; score = 50; rank = "A" };
+    ]
+  = 85
+
+(* 局所関数定義：局所変数と同じように関数を定義できる *)
+let append lst1 lst2 =
+  let appendFirst1 first rest_result = first :: rest_result in
+  List.fold_right appendFirst1 lst1 lst2
+
+(* nameless function *)
+(* fun 引数 -> 式 とすることで無名関数を作れる *)
+
+(* sum *)
+let sum lst =
+  List.fold_right (fun first rest_result -> first + rest_result) lst 0
+
+(* append *)
+let append lst1 lst2 =
+  List.fold_right (fun first rest_result -> first :: rest_result) lst1 lst2
+
+(* 整数を受け取り、1からその整数までに含まれる完全数を求める *)
+let perfect n =
+  let rec enumerate num = if num = 0 then [] else num :: enumerate (num - 1) in
+  let divisor num = List.filter (fun x -> num mod x = 0) (enumerate num) in
+  let sum lst = List.fold_right ( + ) lst 0 in
+  List.filter (fun x -> sum (divisor x) - x = x) (enumerate n)
+
+let test = perfect 6 = [ 6 ]
+(* let test = perfect 10000 = [ 8128; 496; 28; 6 ] *)
+
+(* 目的：1から受け取ったintまでの合計を求める関数 *)
+let one_to_n n =
+  let rec enumerate num = if num = 0 then [] else num :: enumerate (num - 1) in
+  List.fold_right ( + ) (enumerate n) 0
+
+let test = one_to_n 5 = 15
+
+(* 受け取ったintの階乗を求める *)
+let fac n =
+  let rec enumerate num = if num = 0 then [] else num :: enumerate (num - 1) in
+  List.fold_right ( * ) (enumerate n) 1
+
+let test = fac 5 = 120
