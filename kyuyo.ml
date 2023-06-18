@@ -1042,3 +1042,59 @@ let fac n =
   List.fold_right ( * ) (enumerate n) 1
 
 let test = fac 5 = 120
+
+(* Chapter15 新しい形の再帰 *)
+(* 構造に従った再帰でない場合の再起を考える *)
+
+(* クイックソート *)
+
+(* 補助関数：lstからnよりpである要素のみを取り出す *)
+let take n lst p = List.filter (fun x -> p x n) lst
+
+(* 補助関数:lstとintを受け取り、intより小さいlst要素を取り出す *)
+let take_less n lst = take n lst ( < )
+
+(* 補助関数:lstとintを受け取り、int以上のlst要素を取り出す *)
+let take_greater n lst = take n lst ( >= )
+
+let rec quick_sort lst =
+  match lst with
+  | [] -> []
+  | first :: rest ->
+      quick_sort (take_less first rest)
+      @ [ first ]
+      @ quick_sort (take_greater first rest)
+
+let test = quick_sort [] = []
+let test = quick_sort [ 1 ] = [ 1 ]
+let test = quick_sort [ 1; 2 ] = [ 1; 2 ]
+let test = quick_sort [ 2; 1 ] = [ 1; 2 ]
+let test = quick_sort [ 5; 4; 9; 2; 8; 3 ] = [ 2; 3; 4; 5; 8; 9 ]
+let test = quick_sort [ 5; 4; 9; 2; 8; 3; 9 ] = [ 2; 3; 4; 5; 8; 9; 9 ]
+
+(* ユークリッドの互除法 *)
+(* 二つの自然数 m n の最大公約数を求める *)
+let rec gcd m n = if n = 0 then m else gcd n (m mod n)
+let test = gcd 54 21 = 3
+let test = gcd 120 72 = 24
+
+(* エラストステネスのふるい *)
+(* 自然数 n　以下の素数を全て求める *)
+
+(* 補助関数；2以上n以下の自然数のリストを受け取ったら、同じ範囲の素数リストを返す *)
+let rec sieve lst =
+  match lst with
+  | [] -> []
+  | first :: rest ->
+      first :: sieve (List.filter (fun x -> x mod first != 0) rest)
+
+let test = sieve [ 2; 3; 4; 5; 6; 7; 8; 9; 10 ] = [ 2; 3; 5; 7 ]
+
+(* 自然数を受け取ったらそれ以下の素数のリストを返す *)
+let prime n =
+  let rec enumerateFrom2 num =
+    if num = 2 then [ 2 ] else enumerateFrom2 (num - 1) @ [ num ]
+  in
+  sieve (enumerateFrom2 n)
+
+let test = prime 10 = [ 2; 3; 5; 7 ]
