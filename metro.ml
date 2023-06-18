@@ -994,3 +994,46 @@ let test2 =
       { namae = "本郷三丁目"; saitan_kyori = infinity; temae_list = [] };
       { namae = "御茶ノ水"; saitan_kyori = infinity; temae_list = [] };
     ]
+
+(* ekiType listを受け取り、最短距離が最小のekiTypeと、それ以外のekiType listをタプルとして返す *)
+let rec saitan_wo_bunri lst =
+  match lst with
+  | [] -> ({ namae = "foo"; saitan_kyori = infinity; temae_list = [] }, lst)
+  | first :: [] -> (first, [])
+  | ({ namae; saitan_kyori = kyori_f; temae_list } as first) :: rest ->
+      let ({ saitan_kyori = kyori_r } as eki_r), lst_r = saitan_wo_bunri rest in
+      if kyori_f < kyori_r then (first, eki_r :: lst_r)
+      else (eki_r, first :: lst_r)
+
+(* 駅の例 *)
+let eki1 = { namae = "池袋"; saitan_kyori = infinity; temae_list = [] }
+
+let eki2 = { namae = "新大塚"; saitan_kyori = 1.2; temae_list = [ "新大塚"; "茗荷谷" ] }
+
+let eki3 = { namae = "茗荷谷"; saitan_kyori = 0.; temae_list = [ "茗荷谷" ] }
+
+let eki4 = { namae = "後楽園"; saitan_kyori = infinity; temae_list = [] }
+
+(* 駅リストの例 *)
+let lst = [ eki1; eki2; eki3; eki4 ]
+
+(* テスト *)
+let test = saitan_wo_bunri lst = (eki3, [ eki1; eki2; eki4 ])
+(* let test = saitan_wo_bunri [ eki1 ] *)
+
+(* fold_rightでかく *)
+let saitan_wo_bunri lst =
+  match lst with
+  | [] -> ({ namae = "foo"; saitan_kyori = infinity; temae_list = [] }, [])
+  | first :: rest ->
+      List.fold_right
+        (fun eki result ->
+          match eki with
+          | { saitan_kyori = kyori_e } -> (
+              match result with
+              | ({ saitan_kyori = kyori_r } as eki_r), list_r ->
+                  if kyori_e < kyori_r then (eki, eki_r :: list_r)
+                  else (eki_r, eki :: list_r)))
+        rest (first, [])
+
+let test = saitan_wo_bunri lst
