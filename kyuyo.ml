@@ -1098,3 +1098,217 @@ let prime n =
   sieve (enumerateFrom2 n)
 
 let test = prime 10 = [ 2; 3; 5; 7 ]
+
+(* Chapter16 情報の蓄積 *)
+
+type distance_t = { kyori : float; total : float }
+
+(* distance_t listを受け取り、各要素のkyoriと、これまでのkyoriの合計をtotalに入れたリストを返す *)
+(* firstからrestに情報を渡す必要がある（合計距離）→このような場合に、引数を追加した関数を作成する（アキュムレータ） *)
+(* 下記例では補助関数 hojoにアキュムレータtotal0を渡している *)
+let total_distance lst =
+  let rec hojo lst total0 =
+    match lst with
+    | [] -> []
+    | { kyori = k; total = t } :: rest ->
+        { kyori = k; total = total0 +. k } :: hojo rest (total0 +. k)
+  in
+  hojo lst 0.
+
+(* 目的：int listを受け取り、累積和のint listを返す *)
+let sum_list lst =
+  let rec hojo lst total0 =
+    match lst with
+    | [] -> []
+    | first :: rest -> (total0 + first) :: hojo rest (total0 + first)
+  in
+  hojo lst 0
+
+let test = sum_list [ 3; 5; 2; 1 ] = [ 3; 8; 10; 11 ]
+
+(* 与えられたリストを逆順にして返す *)
+let reverse lst =
+  let rec rev lst result =
+    match lst with [] -> [] | first :: rest -> rev rest (first :: result)
+  in
+  rev lst []
+
+(* Chapter17 再帰的なデータ構造 *)
+(* リスト、自然数以外でも、再帰的なデータ構造であれば構造に従って再帰が回せる *)
+
+(* バリアント型：ユニオン型のように複数の選択肢から一つを取れるような型 *)
+type teamType = Red | White
+
+(* パターンマッチもできる *)
+let showTeam team = match team with Red -> "Red" | White -> "White"
+
+(* バリアント型は、構成子 of 型で構成子にも引数を持たせられる *)
+type nengouType = Meiji of int | Taisho of int | Showa of int | Heisei of int
+
+(* 引数には 構成子 (n)としてアクセスできる。パターンマッチでも使える *)
+let toSeireki nengou =
+  match nengou with
+  | Meiji n -> n + 1867
+  | Taisho n -> n + 1911
+  | Showa n -> n + 1925
+  | Heisei n -> n + 1988
+
+(* 誕生年と現在の年をnengouTypeの値としてそれぞれうけとり、現在の年齢を返す *)
+let nenrei birth present =
+  let toSeireki nengou =
+    match nengou with
+    | Meiji n -> n + 1867
+    | Taisho n -> n + 1911
+    | Showa n -> n + 1925
+    | Heisei n -> n + 1988
+  in
+  toSeireki present - toSeireki birth
+
+let test = nenrei (Showa 11) (Heisei 7) = 59
+
+(* バリアント型は自己参照することができる。それを使って木構造を再現できる *)
+(* 有向木を表す型 *)
+type treeType =
+  | Empty
+  (* 空の木：つまり何も入っていない *)
+  | Leaf of int
+  (* 葉：整数の入った要素 *)
+  | Node of treeType * int * treeType (* 節：他の節あるいは葉に接続された要素 *)
+
+(* 例 *)
+let tree1 = Node (Empty, 5, Leaf 10)
+let tree2 = Node (tree1, 17, Leaf 9)
+
+(* 再帰的なデータ構造を扱う関数 *)
+
+let tree1 = Empty
+let tree2 = Leaf 3
+let tree3 = Node (tree1, 4, tree2)
+let tree4 = Node (tree2, 5, tree3)
+
+(* 目的：treeTypeを受け取り、整数の合計を返す *)
+let rec sum_tree tree =
+  match tree with
+  | Empty -> 0
+  | Leaf n -> n
+  | Node (t1, n, t2) -> n + sum_tree t1 + sum_tree t2
+
+let test = sum_tree tree1 = 0
+let test = sum_tree tree2 = 3
+let test = sum_tree tree3 = 7
+let test = sum_tree tree4 = 15
+
+(* 目的：treeTypeを受け取り、すべての値を２倍にしたtreeTypeを返す *)
+let rec tree_double tree =
+  match tree with
+  | Empty -> Empty
+  | Leaf n -> Leaf (2 * n)
+  | Node (t1, n, t2) -> Node (tree_double t1, 2 * n, tree_double t2)
+
+let test4 = tree_double tree4 = Node (Leaf 6, 10, Node (Empty, 8, Leaf 6))
+
+(* int->intの関数funcとtreeTypeを受け取り、treeのすべてにfuncを適用する *)
+let rec tree_map func tree =
+  match tree with
+  | Empty -> Empty
+  | Leaf n -> Leaf (func n)
+  | Node (t1, n, t2) -> Node (tree_map func t1, func n, tree_map func t2)
+
+let test4 =
+  tree_map (fun x -> 2 * x) tree4 = Node (Leaf 6, 10, Node (Empty, 8, Leaf 6))
+
+(* 目的：treeTypeを受け取り、節と葉がいくつあるかを返す *)
+let rec tree_length tree =
+  match tree with
+  | Empty -> 0
+  | Leaf n -> 1
+  | Node (t1, n, t2) -> 1 + tree_length t1 + tree_length t2
+
+let test4 = tree_length tree4 = 4
+
+(* 目的：treeTypeを受け取り、木の深さを返す *)
+let rec tree_depth tree =
+  match tree with
+  | Empty -> 0
+  | Leaf n -> 0
+  | Node (t1, n, t2) -> 1 + max (tree_depth t1) (tree_depth t2)
+
+(* テスト *)
+let test1 = tree_depth tree1 = 0
+let test2 = tree_depth tree2 = 0
+let test3 = tree_depth tree3 = 1
+let test4 = tree_depth tree4 = 2
+
+(* 木構造を応用して、二分探索を行うことができる *)
+(* 目的：data が二分探索木treeに含まれているかを判定 *)
+let rec search tree data =
+  match tree with
+  | Empty -> false
+  | Leaf n -> data = n
+  | Node (t1, n, t2) ->
+      if data = n then true
+      else if data < n then search t1 data
+      else search t2 data
+
+(* 二分探索木の例 *)
+let tree1 = Empty
+let tree2 = Leaf 3
+let tree3 = Node (Leaf 1, 2, Leaf 3)
+let tree4 = Node (Empty, 7, Leaf 9)
+let tree5 = Node (tree3, 6, tree4)
+
+(* テスト *)
+let test = search tree1 3 = false
+let test = search tree2 3 = true
+let test = search tree2 4 = false
+let test = search tree5 6 = true
+let test = search tree5 2 = true
+let test = search tree5 1 = true
+let test = search tree5 4 = false
+let test = search tree5 8 = false
+let test = search tree5 9 = true
+
+(* 目的：二分探索木 tree とdataを受け取り、treeにdataを追加した二分探索木を返す *)
+let rec insert_tree tree data =
+  match tree with
+  | Empty -> Leaf data
+  | Leaf n ->
+      if data < n then Node (Leaf data, n, Empty)
+      else if data = n then Leaf n
+      else Node (Empty, n, Leaf data)
+  | Node (t1, n, t2) ->
+      if data < n then Node (insert_tree t1 data, n, t2)
+      else if data = n then Node (t1, n, t2)
+      else Node (t1, n, insert_tree t2 data)
+
+(* 多相型の宣言 *)
+(* 'a 型名 という宣言により、ジェネリクスを用いることができる。 *)
+type 'a treeType = Empty | Leaf of 'a | Node of 'a treeType * 'a * 'a treeType
+
+(* searchやinsert_treeを他の型についても適用できる *)
+let rec search tree data =
+  match tree with
+  | Empty -> false
+  | Leaf n -> data = n
+  | Node (t1, n, t2) ->
+      if data = n then true
+      else if data < n then search t1 data
+      else search t2 data
+
+let rec insert_tree tree data =
+  match tree with
+  | Empty -> Leaf data
+  | Leaf n ->
+      if data < n then Node (Leaf data, n, Empty)
+      else if data = n then Leaf n
+      else Node (Empty, n, Leaf data)
+  | Node (t1, n, t2) ->
+      if data < n then Node (insert_tree t1 data, n, t2)
+      else if data = n then Node (t1, n, t2)
+      else Node (t1, n, insert_tree t2 data)
+
+(* 複数の型を型変数のタプルとして受け取ることもできる *)
+type ('a, 'b) treeType =
+  | Empty
+  | Leaf of 'a * 'b
+  | Node of ('a, 'b) treeType * ('a * 'b) * ('a, 'b) treeType

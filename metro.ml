@@ -914,15 +914,13 @@ let test2 =
       eki4;
     ]
 
-let koushin p v =
+let koushin p v lst =
   let koushin1 p q =
     match p with
     | { namae = namae_p; saitan_kyori = kyori_p; temae_list = temae_p } -> (
         match q with
         | { namae = namae_q; saitan_kyori = kyori_q; temae_list = temae_q } ->
-            let kyori_p_q =
-              get_ekikan_kyori namae_p namae_q global_ekikan_list
-            in
+            let kyori_p_q = get_ekikan_kyori namae_p namae_q lst in
             if kyori_p_q = infinity then q
             else
               let new_kyori_q = kyori_p +. kyori_p_q in
@@ -1037,3 +1035,72 @@ let saitan_wo_bunri lst =
         rest (first, [])
 
 let test = saitan_wo_bunri lst
+
+(* ekiType listで未確定の駅リストと、pathType listで駅間経路のリストを受け取り、各駅について最短の距離と経路が入ったリストを返す *)
+let rec dijkstra_main v ekikan =
+  match v with
+  | [] -> []
+  | first :: rest ->
+      let saitan_eki, nokori = saitan_wo_bunri v in
+      let new_v = koushin saitan_eki nokori ekikan in
+      saitan_eki :: dijkstra_main new_v ekikan
+
+(* 駅の例 *)
+let eki1 = { namae = "池袋"; saitan_kyori = infinity; temae_list = [] }
+
+let eki2 = { namae = "新大塚"; saitan_kyori = 1.2; temae_list = [ "新大塚"; "茗荷谷" ] }
+
+let eki3 = { namae = "茗荷谷"; saitan_kyori = 0.; temae_list = [ "茗荷谷" ] }
+
+let eki4 = { namae = "後楽園"; saitan_kyori = infinity; temae_list = [] }
+
+(* 駅リストの例 *)
+let lst = [ eki1; eki2; eki3; eki4 ]
+
+(* テスト *)
+let test1 = dijkstra_main [] global_ekikan_list = []
+let test2 = dijkstra_main lst global_ekikan_list
+
+(* 起点と終点の駅をローマ字の文字列で受け取り、終点の駅レコードを返す *)
+let dijkstra kiten shuten =
+  let unique_ekimei_list = seiretsu global_ekimei_list in
+  let kiten_kanji = romaji_to_kanji kiten unique_ekimei_list in
+  let shuten_kanji = romaji_to_kanji shuten unique_ekimei_list in
+  let initial_eki_list = make_initial_eki_list unique_ekimei_list kiten_kanji in
+  let result = dijkstra_main initial_eki_list global_ekikan_list in
+  List.hd
+    (List.filter
+       (fun x -> match x with { namae } -> namae = shuten_kanji)
+       result)
+
+(* テスト *)
+let test1 =
+  dijkstra "shibuya" "gokokuji"
+  = {
+      namae = "護国寺";
+      saitan_kyori = 9.8;
+      temae_list =
+        [ "護国寺"; "江戸川橋"; "飯田橋"; "市ヶ谷"; "麹町"; "永田町"; "青山一丁目"; "表参道"; "渋谷" ];
+    }
+
+let test2 =
+  dijkstra "myogadani" "meguro"
+  = {
+      namae = "目黒";
+      saitan_kyori = 12.7000000000000028;
+      temae_list =
+        [
+          "目黒";
+          "白金台";
+          "白金高輪";
+          "麻布十番";
+          "六本木一丁目";
+          "溜池山王";
+          "永田町";
+          "麹町";
+          "市ヶ谷";
+          "飯田橋";
+          "後楽園";
+          "茗荷谷";
+        ];
+    }
