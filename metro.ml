@@ -1104,3 +1104,118 @@ let test2 =
           "茗荷谷";
         ];
     }
+
+(* 駅名と「接続されている駅の駅名と距離の組　のリスト」を要素として持つ木構造の型 *)
+type ekikan_tree_t =
+  | Empty
+  | Node of ekikan_tree_t * string * (string * float) list * ekikan_tree_t
+
+(* 目的：駅名と「接続されている駅の駅名と距離の組　のリスト」を受け取り、その駅までの距離を返す *)
+let rec assoc eki lst =
+  match lst with
+  | [] -> infinity
+  | (ekimei, kyori) :: rest -> if eki = ekimei then kyori else assoc eki rest
+
+(* テスト *)
+let test1 = assoc "後楽園" [] = infinity
+let test2 = assoc "後楽園" [ ("新大塚", 1.2); ("後楽園", 1.8) ] = 1.8
+let test3 = assoc "池袋" [ ("新大塚", 1.2); ("後楽園", 1.8) ] = infinity
+
+(* 目的：ekikan_tree_t型の木と、kitenとshuten,kyoriを受け取り、kitenからshutenへの経路情報を木に追加する *)
+let rec insert_ekikan_oneway tree kiten shuten kyori =
+  match tree with
+  | Empty -> Node (Empty, kiten, [ (shuten, kyori) ], Empty)
+  | Node (t1, eki, lst, t2) ->
+      if kiten < eki then
+        Node (insert_ekikan_oneway t1 kiten shuten kyori, eki, lst, t2)
+      else if kiten = eki then Node (t1, eki, (shuten, kyori) :: lst, t2)
+      else Node (t1, eki, lst, insert_ekikan_oneway t2 kiten shuten kyori)
+
+(* 目的、ekikan_tree_tの木と、pathTypeの値を受け取り、pathTypeの情報を追加する *)
+let insert_ekikan tree path =
+  match path with
+  | { kiten; shuten; kyori } ->
+      insert_ekikan_oneway
+        (insert_ekikan_oneway tree shuten kiten kyori)
+        kiten shuten kyori
+
+(* 目的：ekikan_tree_tの木と、pathType listを受け取り、listの情報をすべて木に追加する *)
+let inserts_ekikan tree lst = List.fold_left insert_ekikan tree lst
+
+(* 駅間の例 *)
+let ekikan1 =
+  { kiten = "池袋"; shuten = "新大塚"; keiyu = "丸ノ内線"; kyori = 1.8; jikan = 3 }
+
+let ekikan2 =
+  { kiten = "新大塚"; shuten = "茗荷谷"; keiyu = "丸ノ内線"; kyori = 1.2; jikan = 2 }
+
+let ekikan3 =
+  { kiten = "茗荷谷"; shuten = "後楽園"; keiyu = "丸ノ内線"; kyori = 1.8; jikan = 2 }
+
+(* テスト *)
+let tree1 = insert_ekikan Empty ekikan1
+
+let test1 =
+  tree1
+  = Node
+      ( Empty,
+        "新大塚",
+        [ ("池袋", 1.8) ],
+        Node (Empty, "池袋", [ ("新大塚", 1.8) ], Empty) )
+
+let tree2 = insert_ekikan tree1 ekikan2
+
+let test2 =
+  tree2
+  = Node
+      ( Empty,
+        "新大塚",
+        [ ("茗荷谷", 1.2); ("池袋", 1.8) ],
+        Node
+          ( Empty,
+            "池袋",
+            [ ("新大塚", 1.8) ],
+            Node (Empty, "茗荷谷", [ ("新大塚", 1.2) ], Empty) ) )
+
+let tree3 = insert_ekikan tree2 ekikan3
+
+let test3 =
+  tree3
+  = Node
+      ( Node (Empty, "後楽園", [ ("茗荷谷", 1.8) ], Empty),
+        "新大塚",
+        [ ("茗荷谷", 1.2); ("池袋", 1.8) ],
+        Node
+          ( Empty,
+            "池袋",
+            [ ("新大塚", 1.8) ],
+            Node (Empty, "茗荷谷", [ ("後楽園", 1.8); ("新大塚", 1.2) ], Empty) ) )
+
+(* テスト *)
+let test1 =
+  inserts_ekikan Empty [ ekikan1; ekikan2; ekikan3 ]
+  = Node
+      ( Node (Empty, "後楽園", [ ("茗荷谷", 1.8) ], Empty),
+        "新大塚",
+        [ ("茗荷谷", 1.2); ("池袋", 1.8) ],
+        Node
+          ( Empty,
+            "池袋",
+            [ ("新大塚", 1.8) ],
+            Node (Empty, "茗荷谷", [ ("後楽園", 1.8); ("新大塚", 1.2) ], Empty) ) )
+
+(* 目的：漢字の駅名二つと、ekikan_tree_t型の木を受け取り、その２駅間の距離を返す *)
+let rec get_ekikan_kyori eki1 eki2 tree =
+  match tree with
+  | Empty -> -1.
+  | Node (t1, eki, lst, t2) ->
+      if eki1 = eki then assoc eki2 lst
+      else if eki2 = eki then assoc eki1 lst
+      else if eki1 < eki then get_ekikan_kyori eki1 eki2 t1
+      else get_ekikan_kyori eki1 eki2 t2
+
+(* テスト *)
+let global_ekikan_tree = inserts_ekikan Empty global_ekikan_list
+let test1 = get_ekikan_kyori "茗荷谷" "新大塚" global_ekikan_tree = 1.2
+let test2 = get_ekikan_kyori "茗荷谷" "池袋" global_ekikan_tree = infinity
+let test3 = get_ekikan_kyori "東京" "大手町" global_ekikan_tree = 0.6

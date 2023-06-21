@@ -1312,3 +1312,21 @@ type ('a, 'b) treeType =
   | Empty
   | Leaf of 'a * 'b
   | Node of ('a, 'b) treeType * ('a * 'b) * ('a, 'b) treeType
+
+(* minimumを[]リストがない前提で書き直す *)
+let minimum lst =
+  match lst with
+  | [] -> max_int
+  | first :: rest ->
+      let rec minimum1 elem lst =
+        match lst with
+        | [] -> elem
+        | first :: rest -> min elem (minimum1 first rest)
+      in
+      minimum1 first rest
+
+(* テスト *)
+let test1 = minimum [ 3 ] = 3
+let test2 = minimum [ 1; 2 ] = 1
+let test3 = minimum [ 3; 2 ] = 2
+let test4 = minimum [ 3; 2; 6; 4; 1; 8 ] = 1
